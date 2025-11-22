@@ -1,60 +1,59 @@
 #!/bin/bash
 
-# Skrypt do usuwania metadanego z plików
+# Script for removing metadata from files
 
-# Sprawdzanie, czy exiftool jest zainstalowany
+# Checking if exiftool is installed
 if ! command -v exiftool &> /dev/null; then
-    echo "Instalowanie exiftool..."
     sudo apt update && sudo apt install -y libimage-exiftool-perl || {
-        echo "Błąd: Nie udało się zainstalować exiftool"
+        echo "Error: Failed to install exiftool"
         exit 1
     }
 fi
 
-# Sprawdzanie, czy podano argument
+# Checking whether an argument has been provided
 if [ $# -eq 0 ]; then
-    echo "Użycie: $0 <plik> [<kolejny_plik> ...]"
-    echo "Przykład: $0 zdjecie.jpg dokument.pdf"
+    echo "Usage: $0 <file> [<next_file> ]"
+    echo "Example: $0 photo.jpg document.pdf"
     exit 1
 fi
 
-# Pętla przetwarzająca wszystkie argumenty (pliki) przekazane do skryptu
+# Loop processing all arguments (files) passed to the script
 for file in "$@"; do
-    # Sprawdzenia czy plik istnieje i jest zwykłym plikiem
+    # Check if the file exists and is a regular file
     if [ ! -f "$file" ]; then
-        echo "Ostrzeżenie: Plik '$file' nie istnieje - pomijam"
+        echo "Warning: File ‘$file’ does not exist - skipping"
         continue
     fi
     
-    # Informacja o rozpoczęciu orzetwarzania bieżącego pliku
+    # Information about the start of processing the current file
     echo "Przetwarzam plik: $file"
     
-    # Tworzenia kopii zapasowej
+    # Creating a backup
     backup="${file}.backup"
     cp "$file" "$backup"
-    echo "Utworzono kopię zapasową: $backup"
+    echo "Backup created: $backup"
     
-    # Użycie exiftool z opcją -all= do usunięcia wszystkich metadanych
+    # Use exiftool with the -all= option to remove all metadata
     exiftool -all= "$file" -overwrite_original
     
-    # Sprawdzenia statusu wykonania ostatniej komendy 
+    # Checking the status of the last command 
     if [ $? -eq 0 ]; then
-        echo "Metadane zostały usunięte z pliku: $file"
+        echo "Metadata has been removed from the file: $file"
         
-        # Porównania rozmiarów plików
+        # File size comparisons
         original_size=$(stat -c %s "$backup")
         new_size=$(stat -c %s "$file")
         size_diff=$((original_size - new_size))
         
-        # Wyświetlenie informacji o zaoszczędzonym miejscu
-        echo "Zaoszczędzone miejsce: $size_diff bajtów"
+        # Displaying information about saved space
+        echo "Space saved: $size_diff bytes"
     else
-        # Jeśli wystąpił błąd 
-        echo "Błąd: Nie udało się usunąć metadanych z pliku: $file"
-        echo "Przywracam oryginalny plik z kopii zapasowej"
-        # Przywrócenie oryginalnej wersji pliku z kopii zapasowej 
+        # If an error occurred 
+        echo "Error: Failed to remove metadata from file: $file"
+        echo "I am restoring the original file from the backup copy."
+        # Restoring the original version of a file from a backup 
         mv "$backup" "$file"
     fi
 done
 
-echo "Operacja zakończona."
+echo "Operation complete."
